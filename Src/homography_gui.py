@@ -44,11 +44,9 @@ def get_file_locations() -> tuple[str]:
     arguments = parser.parse_args()
     input_path, output_path = arguments.input_path, arguments.output_path
 
+    print(input_path)
     while not isfile(input_path):
         input_path = input("Invalid load filepath. Input image file path: ")
-
-    while not isfile(output_path):
-        output_path = input("Invalid load filepath. Input image file path: ")
 
     return input_path, output_path
 
