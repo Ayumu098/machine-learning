@@ -1,121 +1,106 @@
-"""Module for GUI Application with Tkinter and CV2 Library.
-Allows the user to load an image, select four points on the image,
-displays a perspective transform of the image to canonical bases,
-and finally allows the user to save the image.
+"""
+GUI Application with CV2 Library. Allows the user to load an image from a file path, select four points on the image, display a perspective transform of the image to canonical bases, and finally save the image to a file path.
 """
 
-import tkinter
-import tkinter.filedialog
-
 import cv2
-from numpy import ndarray
+import argparse
+from os.path import isfile
 from homography import to_canonical
 
-MAIN_WINDOW_NAME = "Source Image"
-OUTPUT_WINDOW_NAME = "Target Image"
 
 def record_point(event, x_value: int, y_value: int, _, marked_points: list):
-    """Records mouse clicks in the markers list. Not meant to be called outside event triggers.
+    """
+    Records mouse clicks in the markers list. Not meant to be called outside event triggers.
 
     Args:
             event: event information (not used)
             x_value (int): horizontal-position of the mouse click
             y_value (int): vertical-position   of the mouse click
             _: flags for the event (not used)
-            markers: currently recorded marks from mouse clicks
+            marked_points: currently recorded marks from mouse clicks
     """
 
     if event == cv2.EVENT_LBUTTONDOWN:
         marked_points.append((x_value, y_value))
 
-        if len(marked_points) == 5:
-            marked_points.clear()
 
-
-def _load_file_name():
-    """Opens a tkinter file dialog window to get the image to process.
+def get_file_locations() -> tuple[str]:
+    """
+    Obtains the file load location of the image to undistort
+    and the file save location of the undistorted file from command-line arguments. If arguments are invalid, continually prompt user for input.
 
     Returns:
-        str: filepath of the image to process. Window closed if equal to ''
+        tuple[str]: the input_path and output_path from cli in a tuple
     """
 
-    filepath = None
+    parser = argparse.ArgumentParser(prog='Homography GUI Application')
 
-    # Load image using tkinter filedialog() window
-    loading_window = tkinter.Tk()
+    parser.add_argument('--input_path',  default="Src\source.png",
+                        type=str, help="File path with file name and extension of the undistorted image to load. Defaults to \"source.png\" in source directory.")
 
-    while filepath is None:
-        try:
-            filepath = tkinter.filedialog.askopenfilename()
-            cv2.namedWindow(MAIN_WINDOW_NAME, cv2.WINDOW_NORMAL)
-            cv2.imshow(MAIN_WINDOW_NAME, cv2.imread(filepath))
-        except cv2.error:
+    parser.add_argument('--output_path', default="Src\\target.png",
+                        type=str, help="File path with file name and extension of the undistorted image to save. Defaults to \"target.png\" in source directory.")
 
-            # Empty filepath implies quiting the file explorer window
-            if filepath == '':
-                break
+    arguments = parser.parse_args()
+    input_path, output_path = arguments.input_path, arguments.output_path
 
-            filepath = None
-            print("Invalid image file. File dialog will restart")
+    while not isfile(input_path):
+        input_path = input("Invalid load filepath. Input image file path: ")
 
-    loading_window.quit()
-    return filepath
+    while not isfile(output_path):
+        output_path = input("Invalid load filepath. Input image file path: ")
 
+    return input_path, output_path
 
-def _save_file(image: ndarray):
-
-    # Save image using tkinter filedialog() window
-    saving_window = tkinter.Tk()
-    filepath = None
-
-    while filepath is None:
-        try:
-            filepath = tkinter.filedialog.asksaveasfilename()
-            cv2.imwrite(filepath, image)
-        except cv2.error:
-
-            # Empty filepath implies quiting the file explorer window
-            if filepath == '':
-                break
-
-            filepath = None
-            print("Invalid file name. File dialog will restart")
-
-    saving_window.quit()
 
 def main() -> None:
     """Main function"""
 
-    target = None
-    marked_points = []
-    filepath = _load_file_name()
+    # Window Settings
+    SOURCE_WINDOW = "Source Image"
+    TARGET_WINDOW = "Target Image"
+
+    # Point markers for corners of the document in the distorted image
+    image_corners = []
+    MARKER_COLOR_GREEN = (0, 255, 0)
+
+    input_path, output_path = get_file_locations()
+    cv2.namedWindow(SOURCE_WINDOW, cv2.WINDOW_KEEPRATIO)
+    source = cv2.imread(input_path)
+    cv2.imshow(SOURCE_WINDOW, source)
+
+    # The cv2.imread() of the input_path image and output_path image
+    source, target = None, None
 
     try:
-        while cv2.getWindowProperty(MAIN_WINDOW_NAME, 0) >= 0:
+        # Continually run while SOURCE_WINDOW isn't closed
+        while cv2.getWindowProperty(SOURCE_WINDOW, 0) >= 0:
 
-           # Reload image for a clean copy every reset
-            if len(marked_points) == 0:
-                source = cv2.imread(filepath)
+            # SOURCE WINDOW Settings
+            if len(image_corners) == 0:
+                source = cv2.imread(input_path)
 
-            # Render every marked points as small green circles
-            for point in marked_points:
-                cv2.circle(source, point, 3, (0, 255, 0), cv2.FILLED)
+            for point in image_corners:
+                cv2.circle(img=source, center=point, radius=3,
+                           color=MARKER_COLOR_GREEN, thickness=cv2.FILLED)
 
-            # On completing four corners, display a undistorted (canonical basis) source image
-            if len(marked_points) == 4:
-                target = to_canonical(source, marked_points)
-                cv2.imshow(OUTPUT_WINDOW_NAME, target)
+            cv2.imshow(SOURCE_WINDOW, source)
 
-            cv2.imshow(MAIN_WINDOW_NAME, source)
+            # TARGET WINDOW Settings
+            if len(image_corners) == 4:
+                target = to_canonical(cv2.imread(input_path), image_corners)
+                cv2.namedWindow(TARGET_WINDOW, cv2.WINDOW_KEEPRATIO)
+                cv2.imshow(TARGET_WINDOW, target)
+            elif len(image_corners) == 5:
+                image_corners.clear()
+                cv2.destroyWindow(TARGET_WINDOW)
 
             # Mouse callback for recording points of mouse click
-            cv2.setMouseCallback(MAIN_WINDOW_NAME, record_point, marked_points)
+            cv2.setMouseCallback(SOURCE_WINDOW, record_point, image_corners)
             cv2.waitKey(1)
 
-    # Implies closing of the cv2 source image window
     except cv2.error:
-        if target is not None:
-            _save_file(target)
+        cv2.imwrite(output_path, target)
 
 
 if __name__ == '__main__':
