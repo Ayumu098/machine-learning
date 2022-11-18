@@ -5,7 +5,7 @@ from numpy import linalg, ndarray, array
 import cv2
 
 
-def _arrange_upper_left_clockwise(points: list[tuple[int]]):
+def arrange_upper_left_clockwise(points: list[tuple[int]]):
     """Arranges list of points (x, y) in the following arrangement:
     upper left -> upper right -> lower right -> lower left. Assumes the (x, y)
 	coordinates follow same system as cv2 and PIL.
@@ -41,7 +41,7 @@ def to_canonical(source: ndarray, source_points: list[tuple[int]]) -> ndarray:
     """
 
     # Set source points to clockwise arrangement, starting upper left
-    source_points = _arrange_upper_left_clockwise(source_points)
+    source_points = arrange_upper_left_clockwise(source_points)
 
     upper_left, upper_right, lower_right, lower_left = source_points
     left = (upper_left[0] + lower_left[0]) // 2
