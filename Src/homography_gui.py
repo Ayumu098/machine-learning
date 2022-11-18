@@ -4,8 +4,9 @@ GUI Application with CV2 Library. Allows the user to load an image from a file p
 
 import cv2
 import argparse
+import numpy as np
 from os.path import isfile
-from homography import to_canonical
+from homography import to_canonical, arrange_upper_left_clockwise
 
 
 def record_point(event, x_value: int, y_value: int, _, marked_points: list):
@@ -86,6 +87,11 @@ def main() -> None:
 
             # TARGET WINDOW Settings
             if len(image_corners) == 4:
+                # Add polygon marker for document area
+                corners = arrange_upper_left_clockwise(image_corners)
+                corners = [np.array(corners).reshape(-1,1,2)]
+                cv2.polylines(source, corners, True, MARKER_COLOR_GREEN)
+
                 target = to_canonical(cv2.imread(input_path), image_corners)
                 cv2.namedWindow(TARGET_WINDOW, cv2.WINDOW_KEEPRATIO)
                 cv2.imshow(TARGET_WINDOW, target)
