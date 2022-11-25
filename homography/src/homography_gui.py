@@ -36,10 +36,10 @@ def get_file_locations() -> tuple[str]:
 
     parser = argparse.ArgumentParser(prog='Homography GUI Application')
 
-    parser.add_argument('--input_path',  default="Src\source.png",
+    parser.add_argument('--input_path',  default="src\source.png",
                         type=str, help="File path with file name and extension of the undistorted image to load. Defaults to \"source.png\" in source directory.")
 
-    parser.add_argument('--output_path', default="Src\\target.png",
+    parser.add_argument('--output_path', default="src\\target.png",
                         type=str, help="File path with file name and extension of the undistorted image to save. Defaults to \"target.png\" in source directory.")
 
     arguments = parser.parse_args()

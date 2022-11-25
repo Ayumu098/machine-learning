@@ -2,17 +2,18 @@
 
 ## Description
 
-This is a simple repository for the derivation, testing and implementation of a homography between two camera perspectives with exactly four correspondence or points for the purpose of undistorting a scanned document or subject.
+This is a simple project for the derivation, testing and implementation of a homography between two camera perspectives with exactly four correspondence or points for the purpose of undistorting a scanned document or subject.
 
 ## Purpose
 
-This is made as part of the first requirement, "Removing Projective Distortion on Images" in COE197ML [Foundations of Machine Learning](https://github.com/roatienza/ml) (AY 2022-2021) by Professor Rowel Atienza.
+This is made as part of the first requirement, "Removing Projective Distortion on Images", in COE197ML [Foundations of Machine Learning](https://github.com/roatienza/ml) (AY 2022-2023).
 
 ## Prerequisites
 
-Clone the GitHub repository using git
+Clone the GitHub repository using git and enter the project folder
 ```
-git clone https://github.com/Ayumu098/homography.git
+git clone https://github.com/Ayumu098/machine-learning.git
+cd machine learning
 cd homography
 ```
 
