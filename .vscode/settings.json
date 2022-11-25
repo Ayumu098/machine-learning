@@ -1,6 +1,0 @@
-{
-  "files.exclude": {
-    "homography\\src\\__pycache__": true,
-    ".vscode": true
-  }
-}
