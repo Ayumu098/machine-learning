@@ -2,7 +2,6 @@ from tinygrad.tensor import Tensor, Function
 from tinygrad.nn.optim import SGD, get_parameters
 from dataset import Dataset
 from tqdm import trange
-from extra.training import train
 
 class PolynomialRegressionModel(Function):
     """ Monovariate Prediction Model that fits a given data using Stochastic
