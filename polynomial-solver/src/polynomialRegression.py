@@ -53,7 +53,8 @@ class PolynomialRegressionModel(Function):
 
         prediction  = self(self._training_features)
         self._loss = prediction.sub(self._training_targets).pow(2).mean().sqrt()
-    
+
+
     def backward(self, *args, **kwargs):
         """Backward Propagation of the Model via Stochastic Gradient Descent for Weight Optimization to fit training dataset
         """
@@ -71,24 +72,43 @@ class PolynomialRegressionModel(Function):
             verbose (bool, optional): Show progress bar if True. Defaults to False.
         """
 
+        # Optimizer settings
         self._optimizer = SGD(params=get_parameters(self), lr=learning_rate)
+
+        # Training dataset
         self._training_features = Tensor(train_dataset.input)
         self._training_targets = Tensor(train_dataset.output)
-        
+
+        # SGD with progress bar
         if verbose:
             progress_bar = trange(epochs)
             for _ in progress_bar:
                 self.forward()
                 self.backward()
+
                 progress_bar.set_description(
-                    f"Training: loss: {self._loss.data[0]:5.5e}")
+                    f"Training: (loss: {self._loss.data[0]:5.5e})")
+        
+        # SGD without progress bar
         else:
             for _ in range(epochs):
                 self.forward()
                 self.backward()
+        
+        # Record minimum loss for later reference
+        try:
+            self.minimum_loss = min(self.minimum_loss, self._loss.data[0])
+        except AttributeError:
+            self.minimum_loss = self._loss.data[0]
+
+        # Record maximum loss for later reference
+        try:
+            self.maximum_loss = max(self.maximum_loss, self._loss.data[0])
+        except AttributeError:
+            self.maximum_loss = self._loss.data[0]
 
     def test(self, test_dataset: Dataset) -> float:
-        """Determines the accuracy of the model predictions on an unobserved input-output mapping of the same polynomial phenomenon used in training 
+        """Determines the accuracy of the model predictions on an unobserved input-output mapping of the same polynomial phenomenon used in training
 
         Args:
             test_dataset (Dataset): Unobserved extension of the training dataset
@@ -96,7 +116,7 @@ class PolynomialRegressionModel(Function):
         Returns:
             float: Model accuracy via R2 Score (for percentage units)
         """
-        
+
         testing_features = Tensor(test_dataset.input)
         testing_targets  = Tensor(test_dataset.output)
 
