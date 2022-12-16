@@ -94,7 +94,7 @@ def main(train_csv_filepath, test_csv_filepath, epochs, learning_rate, verbose):
         ## Model Initial Weights
         if verbose:
             print(f"Degree {degree} Polynomial Regression Model")
-            print(f"Weights: {model}")
+            print(f"Weights (x^0, ..., x^n): {model}")
 
         ## Model Training
         model.train(train_dataset=train_dataset,
@@ -103,7 +103,7 @@ def main(train_csv_filepath, test_csv_filepath, epochs, learning_rate, verbose):
             verbose=verbose)
 
         if verbose: 
-            print(f"Weights: {model}")
+            print(f"Weights (x^0,...,x^{degree}): {model}")
     
         ## Model Testing
         model.test(test_dataset=test_dataset)
@@ -113,9 +113,7 @@ def main(train_csv_filepath, test_csv_filepath, epochs, learning_rate, verbose):
 
     optimal_model = min(models, key=lambda model: abs(model.accuracy-1))
     print('{0:=<50}'.format('== Optimal Polynomial Regression Model '))
-
-    print("== Optimal Polynomial Regression Model ")
-    print(f"Degree {optimal_model.degree} Weights: {optimal_model}")
+    print(f"Degree {optimal_model.degree} Weights (x^0,...,x^n): {optimal_model}")
     print(f"Accuracy: {optimal_model.accuracy:5.5%}")
 
 if __name__ == '__main__':
