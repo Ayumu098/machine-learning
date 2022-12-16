@@ -2,120 +2,136 @@
 """
 
 from os.path import isfile
-from argparse import ArgumentParser, BooleanOptionalAction
+from argparse import ArgumentParser, BooleanOptionalAction, Namespace
 from polynomialRegression import PolynomialRegressionModel as polynomial_model
 from dataset import Dataset
 
-def parse_arguments() -> tuple[str]:
-    """ Parses console arguments for the filepaths of the training and testing
-        dataset of the polynomial solver model.
+def parse_arguments() -> Namespace:
+    """Parses console arguments into an argparse Namespace
 
-    Returns:
-        train_dataset (string:  Filepath of a Nx2 .csv file with x, y per row
-        train_dataset (string): Filepath of a Nx2 .csv file with x, y per row
-
+    returns:
+        arguments (Namespace): Contains the console arguments: 
+            .test_filepath:  .csv filepath for Nxd input-output train pairs
+            .train_filepath: .csv filepath for Nxd input-output test pairs
+            .epochs (int): SGD Parameter Optimization steps
+            .learning_rate (float): SGD Parameter Optimization step size 
+            .verbose (bool): Prints model processes console if True. 
     """
 
-    parser = ArgumentParser(prog='Polynomial Solver')
+    parser = ArgumentParser(prog='Polynomial Solver',
+                            description="Program that trains Polynomial Regression Models from degree zero to degree four with a provided training dataset and determines the optimal degree and polynomial coeeficients for said dataset.")
 
-    ## Command Line Interface Arguments
+    # Dataset .csv Filepath: Training
+    parser.add_argument('--train_filepath',  default="data\data_train.csv",
+                        type=str, help="Filepath of a NxD .csv file with input-output columns representing the training dataset for a polynomial phenomenon. Defaults to data\data_train.csv.")
 
-    parser.add_argument('--train',  default="data\data_train.csv",
-                        type=str, help="File path of the csv document containing the training data.")
+    # Dataset .csv Filepath: Testing
+    parser.add_argument('--test_filepath', default="data\data_test.csv",
+                        type=str, help="Filepath of a NxD .csv file with input-output columns representing the unobserved extension of the training dataset. Defaults to data\data_test.csv.")
 
-    parser.add_argument('--test', default="data\data_test.csv",
-                        type=str, help="File path of the csv document containing the testing data.")
+    # Model Parameter: Stochastic Gradient Descent Steps
+    parser.add_argument('--epochs', '--steps', default=1000,
+                        type=int, help="Number of iterations for the Stochastic Gradient Descent based model parameter optimization. Defaults to 1000.")
 
-    parser.add_argument('--epochs', default=1000,
-                        type=int, help="Number of iterations for the Stochastic Gradient Descent process.")
+    # Model Parameter: Stochastic Gradient Descent Learning Rate
+    parser.add_argument('--learning_rate', '--lr', default=0.001,
+                        type=float, help="Scalar of the Gradient in model parameter optimization. Defaults to 0.001.")
 
-    parser.add_argument('--learning_rate', default=0.001,
-                        type=float, help="Learning rate or scalar of the gradient applied to the weights during the Stochastic Gradient Descent process.")
+    # Program: Display Model Processes in Console
+    parser.add_argument('--verbose', '-v', action=BooleanOptionalAction,
+                        help="Prints the model processes and status to console if True. Default is False.")
 
-    parser.add_argument('--verbose', action=BooleanOptionalAction, 
-                        help="Log the model loading and processes to console if enabled.")
+    # Parse console arguments
+    arguments = parser.parse_args()
 
-    ## Dataset Filepaths
-
-    train_csv_filepath = parser.parse_args().train
-
-    assert isfile(train_csv_filepath) and train_csv_filepath.endswith(".csv"), \
+    # Double check validity of csv filepaths
+    train_filepath = arguments.train_filepath
+    assert isfile(train_filepath) and train_filepath.endswith(".csv"), \
         "Training dataset filepath doesn't lead lead to a valid csv document"
-
-    test_csv_filepath = parser.parse_args().test
-
-    assert isfile(test_csv_filepath) and test_csv_filepath.endswith(".csv"), \
+    
+    test_filepath = arguments.test_filepath
+    assert (isfile(test_filepath) and test_filepath.endswith(".csv")), \
         "Testing dataset filepath doesn't lead lead to a valid csv document"
 
-    ## Model Components
-    epochs  = parser.parse_args().epochs
-    learning_rate = parser.parse_args().learning_rate
-    verbose = parser.parse_args().verbose
+    return arguments
 
-    return train_csv_filepath, test_csv_filepath, epochs, learning_rate, verbose
-
-
-def main(train_csv_filepath, test_csv_filepath, epochs, learning_rate, verbose):
-    """ Loads the training and testing data from the filepaths of .csv files
-        with x,y pairs per row, trains a polynomial regression model using the
-        training data for given iterations and learning rate, and then  
-        determines the polynomial degree and coefficients with the least loss in reference to the testing data.
-
+def main(arguments: Namespace) -> None:
+    """ Loads train and test dataset .csv filepaths to Dataset instances,initializes PolynomialRegressionModels with degree range [0, 4],
+    trains each model with the training data set with SGD weight optimization,
+    and determines the most accurate model using the testing dataset.
+    
     Args:
-        train_csv_filepath (str): Filepath of the .csv containing the train x, y
-        test_csv_filepath  (str): Filepath of the .csv containing the test  x, y
-        epochs (int): Number of iterations in model training via SGD.
-        learning_rate (float): Determines the step size during model training.
-        verbose (bool): Log the model loading and processes to console if True. 
+        arguments (Namespace): Contains the console arguments: 
+            .test_filepath:  .csv filepath for Nxd input-output train pairs
+            .train_filepath: .csv filepath for Nxd input-output test pairs
+            .epochs (int): SGD Parameter Optimization steps
+            .learning_rate (float): SGD Parameter Optimization step size 
+            .verbose (bool): Prints model processes console if True. 
     """
 
     ## Dataset Loading
+    if arguments.verbose:
+        print('{0:=<80}'.format('== Dataset Loading '))
 
-    if verbose:
-        print('{0:=<50}'.format('== Dataset Testing '))
+    train_dataset = Dataset(csv_source=arguments.train_filepath)
+    test_dataset  = Dataset(csv_source=arguments.test_filepath)
 
-        train_dataset = Dataset(csv_source=train_csv_filepath)
-        print(f"Training Dataset Loaded: {len(train_dataset.input)}\t entries")
+    if arguments.verbose:
+        print(f"Datasets Loaded: " +
+            f"{len(train_dataset.input)} | {len(test_dataset.input)} " +
+            "train-test entries")
 
-        test_dataset = Dataset(csv_source=test_csv_filepath)
-        print(f"Testing  Dataset Loaded: {len(test_dataset.input)}\t entries")
-    else:
-        train_dataset = Dataset(csv_source=train_csv_filepath)
-        test_dataset = Dataset(csv_source=test_csv_filepath)
+    ## Model Initialization
 
-    models = [ polynomial_model(degree=degree) 
-        for degree in range(polynomial_model.HIGHEST_DEGREE+1) ]
+    if arguments.verbose:
+        print('{0:=<80}'.format('== Polynomial Regression Models '))
 
-    if verbose:
-        print('{0:=<50}'.format('== Polynomial Regression Models '))
+    models = [polynomial_model(degree=degree)
+              for degree in range(polynomial_model.HIGHEST_DEGREE+1)]
+
+    ## Model Iteration
 
     for degree, model in enumerate(models):
 
-        ## Model Initial Weights
-        if verbose:
-            print(f"Degree {degree} Polynomial Regression Model")
-            print(f"Weights (x^0, ..., x^n): {model}")
+        # Model Initial Weights
+        if arguments.verbose:
+            print('{0:=<80}'.format(f'== Degree {degree} Polynomial Model '))
+            print(f"Initial Weights:{model}")
 
-        ## Model Training
+        # Model Training
+        if arguments.verbose:
+            print('{0:=<80}'.format(""))
+
         model.train(train_dataset=train_dataset,
-            learning_rate=learning_rate, 
-            epochs=epochs,
-            verbose=verbose)
+                    learning_rate=arguments.learning_rate,
+                    epochs=arguments.epochs,
+                    verbose=arguments.verbose)
 
-        if verbose: 
-            print(f"Weights (x^0,...,x^{degree}): {model}")
-    
-        ## Model Testing
+        if arguments.verbose:
+            print('{0:=<80}'.format(""))
+
+        # Model Final Weights
         model.test(test_dataset=test_dataset)
 
-        if verbose:
-            print(f"Accuracy: {model.accuracy:5.5%}")
+        # Model Accuracy
+        if arguments.verbose:
+            print("Accuracy: " +
+                 f"{model.accuracy:5.5%} achieved within {arguments.epochs} epochs")
+            print("Loss Range: " +
+                 f"[{model.minimum_loss:5.5e} - {model.maximum_loss:5.5e}]")
 
+    ## Optimal Model Selection
     optimal_model = min(models, key=lambda model: abs(model.accuracy-1))
-    print('{0:=<50}'.format('== Optimal Polynomial Regression Model '))
-    print(f"Degree {optimal_model.degree} Weights (x^0,...,x^n): {optimal_model}")
-    print(f"Accuracy: {optimal_model.accuracy:5.5%}")
 
+    print()
+    print('{0:=<80}'.format( "== Optimal Polynomial Model "))
+    print('{0:=<80}'.format(f"== Degree {optimal_model.degree} Polynomial"))
+    print(optimal_model)
+    print(f"Accuracy: {optimal_model.accuracy:5.5%}")
+    print("Loss Range: " +
+        f"[{optimal_model.minimum_loss:5.5e} - " +
+        f"{optimal_model.maximum_loss:5.5e}]")
+    
 if __name__ == '__main__':
     arguments = parse_arguments()
-    main(*arguments)
+    main(arguments)

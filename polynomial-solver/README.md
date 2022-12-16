@@ -22,34 +22,66 @@ Install the python package dependencies in requirements.txt
 
 `pip install -r requirements.txt`
 
-The tinygrad framework is included in the Src path with minimal dependencies.
+The tinygrad framework is included in the crc path with minimal dependencies.
 
-## Usage
+## Console Interface
 
-### Training and Testing Dataset
-
-To run the polynomial solver on a training and testing dataset that are in csv format, use the following command and replace the path arguments accordingly. The format of the csv files are expected to be Nx2 wherein the first column are the input values and the second column is the output value. The first row is ignored. 
+A main console program `solver.py` is provided to facilitate the finding of the optimal polynomial with degree between 1 to 4 for a provided training and testing dataset. For an overview on the console commands, type the following in the console.
 
 ```console
-python src\solver.py --train=path_train --test=path_test
+python src\solver.py --help
 ```
 
-If no arguments are provided, the default csv files provided, `data\data_test.csv` and `data\data_train.csv`, will be used.
+### Training Dataset
+
+To provide the filepath of a .csv file for training the polynomial regression model, enter the following command and change the `FILEPATH` accordingly. If the argument isn't used, the default is `data\data_train.csv`
+
+```console
+python src\solver.py --train_filepath=FILEPATH
+```
+
+Note that the expected .csv file is (N, 2) with the first row ignored (with the assumption that it's a label header). The first column is for the inputs and their corresponding outputs are in the second column.
+
+### Testing Dataset
+
+To provide the filepath of a .csv file for testing the polynomial regression model, enter the following command and change the `FILEPATH` accordingly. If the argument isn't used, the default is `data\data_test.csv`
+
+```console
+python src\solver.py --test_filepath=FILEPATH
+```
+
+Similar to the training dataset .csv file,  the expected .csv file is (N, 2) with the first row ignored (with the assumption that it's a label header). The first column is for the inputs and their corresponding outputs are in the second column.
+
 
 ### Model Learning Parameters
 
-The iterations or epochs taken by the model training process and the learning rate can also be optionally configured as shown.
+The number of iterations or epochs taken during the model training or parameter optimization process can be set using the following command. Make sure to change `EPOCH` accordingly. If the argument isn't used, the default is 1000.
+
 ```console
-python src\solver.py --epochs=int_value --learning_rate=float_value
+python src\solver.py --epochs=EPOCH --learning_rate=float_value
 ```
 
-### Logging
+Similarly, the learning rate can also be set. Make sure to change `LR`. If the argument isn't used, the default is 0.001.
 
-To see the processes done by each model initialized, add a `--verbose` command.
+```console
+python src\solver.py --learning_rate=LR
+```
+
+### Console Logging
+
+To see the changing model weights and results during the optimization process, add `--verbose` or `--v` to the existing command.
 
 ```console
 python src\solver.py --verbose
 ```
+
+## Polynomial Regression Model Class
+
+Alternatively, the `PolynomialRegressionModel` class can be accessed on its own with the `Dataset` class being the only dependency. The model consists of hidden weights and has the default functionalities of models (i.e., forward propagation via `forward()`, backward propagation via `backward()`, prediction or evaluation via direct call, and additional `train` and `test` methos for convenience).
+
+
+
+
 
 ## Metrics
 
