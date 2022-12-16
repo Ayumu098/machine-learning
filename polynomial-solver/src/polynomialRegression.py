@@ -9,7 +9,8 @@ class PolynomialRegressionModel(Function):
         Error as the loss function.
     """
 
-    HIGHEST_DEGREE = 5
+    # In reference to the Abel–Ruffini Theorem assuming polynomial phenomenon
+    HIGHEST_DEGREE = 4
 
     def __init__(self, device: str = "CPU", *tensors: Tensor, degree:int):
         """ Initializes the monomial weights of the polynomial model.
@@ -25,7 +26,11 @@ class PolynomialRegressionModel(Function):
         self._weights = Tensor.glorot_uniform(1, degree+1)
 
     @property
-    def degree(self):
+    def degree(self) -> int:
+        """
+        Returns:
+            int: Highest monomial exponent in the polynomial.
+        """
         return self._weights.shape[1]-1
 
     def __repr__(self) -> str:
@@ -43,15 +48,28 @@ class PolynomialRegressionModel(Function):
         return output
 
     def forward(self, *args, **kwargs):
+        """Forward Propagation of the Model via prediction and loss calculation
+        """
+
         prediction  = self(self._training_features)
         self._loss = prediction.sub(self._training_targets).pow(2).mean().sqrt()
     
     def backward(self, *args, **kwargs):
+        """Backward Propagation of the Model via Stochastic Gradient Descent for Weight Optimization to fit training dataset
+        """
         self._optimizer.zero_grad()
         self._loss.backward()
         self._optimizer.step()
 
     def train(self, train_dataset: Dataset, learning_rate:float=0.001,epochs:int=1000, verbose=False):
+        """Fits the model weights to the assumed polynomial input-output training dataset pair
+
+        Args:
+            train_dataset (Dataset): Contains the input and corresponding output to a general, unknown polynomial phenomenon
+            learning_rate (float, optional): SGD Step Size. Defaults to 0.001.
+            epochs (int, optional): SGD iterations. Defaults to 1000.
+            verbose (bool, optional): Show progress bar if True. Defaults to False.
+        """
 
         self._optimizer = SGD(params=get_parameters(self), lr=learning_rate)
         self._training_features = Tensor(train_dataset.input)
@@ -70,6 +88,15 @@ class PolynomialRegressionModel(Function):
                 self.backward()
 
     def test(self, test_dataset: Dataset) -> float:
+        """Determines the accuracy of the model predictions on an unobserved input-output mapping of the same polynomial phenomenon used in training 
+
+        Args:
+            test_dataset (Dataset): Unobserved extension of the training dataset
+
+        Returns:
+            float: Model accuracy via R2 Score (for percentage units)
+        """
+        
         testing_features = Tensor(test_dataset.input)
         testing_targets  = Tensor(test_dataset.output)
 
