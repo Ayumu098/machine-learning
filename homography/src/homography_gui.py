@@ -36,10 +36,10 @@ def get_file_locations() -> tuple[str]:
 
     parser = argparse.ArgumentParser(prog='Homography GUI Application')
 
-    parser.add_argument('--input_path',  default="src\source.png",
+    parser.add_argument('--input_path',  default="src\source.jpg",
                         type=str, help="File path with file name and extension of the undistorted image to load. Defaults to \"source.png\" in source directory.")
 
-    parser.add_argument('--output_path', default="src\\target.png",
+    parser.add_argument('--output_path', default="src\\target.jpg",
                         type=str, help="File path with file name and extension of the undistorted image to save. Defaults to \"target.png\" in source directory.")
 
     arguments = parser.parse_args()
@@ -70,6 +70,9 @@ def main() -> None:
 
     # The cv2.imread() of the input_path image and output_path image
     source, target = None, None
+    
+    # Ensure homography calculation is only done once
+    target_calculated = False
 
     try:
         # Continually run while SOURCE_WINDOW isn't closed
@@ -87,17 +90,22 @@ def main() -> None:
 
             # TARGET WINDOW Settings
             if len(image_corners) == 4:
+                                
                 # Add polygon marker for document area
                 corners = arrange_upper_left_clockwise(image_corners)
                 corners = [np.array(corners).reshape(-1,1,2)]
                 cv2.polylines(source, corners, True, MARKER_COLOR_GREEN)
 
-                target = to_canonical(cv2.imread(input_path), image_corners)
+                if not target_calculated:
+                    target_calculated = True
+                    target = to_canonical(cv2.imread(input_path), image_corners)
+                 
                 cv2.namedWindow(TARGET_WINDOW, cv2.WINDOW_KEEPRATIO)
                 cv2.imshow(TARGET_WINDOW, target)
             elif len(image_corners) == 5:
                 image_corners.clear()
                 cv2.destroyWindow(TARGET_WINDOW)
+                target_calculated = False
 
             # Mouse callback for recording points of mouse click
             cv2.setMouseCallback(SOURCE_WINDOW, record_point, image_corners)

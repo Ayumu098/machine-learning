@@ -1,14 +1,35 @@
 """Contains the homography_matrix and to_canonical main functions
 """
 
-from numpy import linalg, ndarray, array
-import cv2
+from numpy import linalg, ndarray, array, interp
+from itertools import product
+                    
+def warp_perspective(image: ndarray, homography: ndarray) -> ndarray:
+    
+    """
+    Application of the cv2.warp perspective from scratch. 
+    Note: Has significant image artifacts
+    """
+ 
+    rows, columns = image.shape[:2]
+    target = ndarray(image.shape, dtype=image.dtype)
 
+    for row, column in product(range(rows), range(columns)):
+
+        # Apply homography matrix to each point        
+        target_row, target_column, _ = homography.dot(array([row, column, 1]))
+        target_row, target_column = round(target_row), round(target_column)
+
+        if 0 <= target_row < rows and 0 <= target_column < columns:
+            target[target_row, target_column] = image[row, column]
+
+    return target
+    
 
 def arrange_upper_left_clockwise(points: list[tuple[int]]):
     """Arranges list of points (x, y) in the following arrangement:
     upper left -> upper right -> lower right -> lower left. Assumes the (x, y)
-	coordinates follow same system as cv2 and PIL.
+    coordinates follow same system as cv2 and PIL.
 
     Args:
         points (list[tuple[int]]): List of tuples (x, y)
@@ -25,21 +46,21 @@ def arrange_upper_left_clockwise(points: list[tuple[int]]):
 
     # Clockwise arrangement, starting at upper left point
     return [upper_left, upper_right, lower_right, lower_left]
-
+    
 
 def to_canonical(source: ndarray, source_points: list[tuple[int]]) -> ndarray:
     """Function to convert an image in non canonical basis to canonical basis
-	via projective linear transformation
+    via projective linear transformation
 
     Args:
             source (ndarray): image loaded using cv2.imread()
             source_points (list[tuple[int]]): list of 4 tuples (x,y)
-			corresponding to points in the source image
+            corresponding to points in the source image
 
     Returns:
             ndarray: image in rectangular form or in canonical basis
     """
-
+    
     # Set source points to clockwise arrangement, starting upper left
     source_points = arrange_upper_left_clockwise(source_points)
 
@@ -56,9 +77,9 @@ def to_canonical(source: ndarray, source_points: list[tuple[int]]) -> ndarray:
 
     # Apply the homography matrix for undistortion and crop to size
     undistort = homography_matrix(source_points, target_points)
-    target = cv2.warpPerspective(source.copy(), undistort, source.shape[1::-1])
 
-    return target[top:bottom, left:right]
+    #target = cv2.warpPerspective(source.copy(), undistort, source.shape[1::-1])
+    return warp_perspective(source, undistort)[top:bottom, left:right]
 
 
 def homography_matrix(source_points: list[float], target_points: list[float]):
@@ -95,5 +116,8 @@ def homography_matrix(source_points: list[float], target_points: list[float]):
     intermediate = array(intermediate).reshape((2 * len(source_points), -1))
     _, _, v_singular = linalg.svd(intermediate)
     homography = v_singular[-1].reshape((3, 3))
+
+    # Normalize homography matrix
+    homography /= homography[2,2]
 
     return homography
